@@ -1,0 +1,10 @@
+{
+  "name": "Type-system-thing-AST",
+  "version": "1.0.0",
+  "main": "index.js",
+  "license": "MIT",
+  "private": true,
+  "devDependencies": {
+    "typescript": "^4.4.2"
+  }
+}
