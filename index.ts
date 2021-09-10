@@ -1,6 +1,6 @@
 import { objectEquals } from "./utils";
 
-type ast = (TypeDeclaration | Expression)[];
+export type ast = (TypeDeclaration | Expression)[];
 
 type TypeParameterDeclaration = {
     name: string;
@@ -59,7 +59,7 @@ type _InferExpression = {
     name: string;
 };
 
-type _ExtendsExpression = {
+export type _ExtendsExpression = {
     __typename: "ExtendsExpression"
     items: (Expression | _InferExpression | _SpreadExpression)[];
 };
@@ -73,7 +73,7 @@ function evalAst(ast: ast) {
     return ast.filter(item => item.__typename !== "TypeDeclaration").map((e) => normalizeItem(evalExpression(e as Expression, ast, {})));
 }
 
-type Expression = CallExpression | NumberLiteralExpression | ItemLiteralExpression | ArrayLiteralExpression | ConditionExpression | ParameterReferenceExpression | AbortLiteralExpression;
+export type Expression = CallExpression | NumberLiteralExpression | ItemLiteralExpression | ArrayLiteralExpression | ConditionExpression | ParameterReferenceExpression | AbortLiteralExpression;
 
 type InternalItem = {
     __typename: "Item"
@@ -280,7 +280,6 @@ function evalExpression(e: Expression, ast: ast, values: {
                 // It's a bit easier
                 const res = normalizeItem(evalExpression(e.condition, ast, values));
                 const normalizedEvaluatee = normalizeItem(evalExpression(e.evaluatee, ast, values));
-                console.log(e[objectEquals(res, normalizedEvaluatee) ? "true" : "false"]);
 
                 return evalExpression(e[objectEquals(res, normalizedEvaluatee) ? "true" : "false"], ast, values)
             }
@@ -547,11 +546,11 @@ const testDoc: ast = [
         parameters: [
             {
                 __typename: "NumberLiteralExpression",
-                value: 5
+                value: 50
             },
             {
                 __typename: "NumberLiteralExpression",
-                value: 8
+                value: 100
             }
         ]
     },
