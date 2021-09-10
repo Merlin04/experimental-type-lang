@@ -247,7 +247,7 @@ function evalExpression(e: Expression, ast: ast, values: {
                             break;
                         }
                         else {
-                            values[flattenedItem.name] = normalizedEvaluatee[i];
+                            inferredValues[flattenedItem.name] = normalizedEvaluatee[i];
                         }
                     }
                     else if(!objectEquals(flattenedItem, normalizedEvaluatee[i])) {
@@ -263,7 +263,7 @@ function evalExpression(e: Expression, ast: ast, values: {
                                 break;
                             }
                             else {
-                                values[flattenedItem.name] = normalizedEvaluatee[i];
+                                inferredValues[flattenedItem.name] = normalizedEvaluatee[i];
                             }
                         }
                         else if(!objectEquals(flattenedItem, normalizedEvaluatee[i])) {
@@ -352,8 +352,11 @@ const testDoc: ast = [
                         name: "Result"
                     },
                     {
-                        __typename: "ParameterReferenceExpression",
-                        name: "N2"
+                        __typename: "SpreadExpression",
+                        value: {
+                            __typename: "ParameterReferenceExpression",
+                            name: "N2"
+                        }
                     }
                 ]
             },
@@ -481,38 +484,64 @@ const testDoc: ast = [
                 ]
             },
             true: {
-                __typename: "ArrayLiteralExpression",
-                items: [
+                __typename: "CallExpression",
+                callee: "Flatten",
+                parameters: [
                     {
-                        __typename: "CallExpression",
-                        callee: "Add",
-                        parameters: [
+                        __typename: "ArrayLiteralExpression",
+                        items: [
                             {
-                                __typename: "ParameterReferenceExpression",
-                                name: "A"
+                                __typename: "CallExpression",
+                                callee: "Add",
+                                parameters: [
+                                    {
+                                        __typename: "ParameterReferenceExpression",
+                                        name: "A"
+                                    },
+                                    {
+                                        __typename: "ParameterReferenceExpression",
+                                        name: "B"
+                                    }
+                                ]
                             },
                             {
-                                __typename: "ParameterReferenceExpression",
-                                name: "B"
+                                __typename: "SpreadExpression",
+                                value: {
+                                    __typename: "ParameterReferenceExpression",
+                                    name: "rest"
+                                }
                             }
                         ]
-                    },
-                    {
-                        __typename: "SpreadExpression",
-                        value: {
-                            __typename: "ParameterReferenceExpression",
-                            name: "rest"
-                        }
                     }
                 ]
             },
             false: {
-                __typename: "ParameterReferenceExpression",
-                name: "Input"
+                __typename: "ConditionExpression",
+                evaluatee: {
+                    __typename: "ParameterReferenceExpression",
+                    name: "Input"
+                },
+                condition: {
+                    __typename: "ExtendsExpression",
+                    items: [
+                        {
+                            __typename: "InferExpression",
+                            spread: false,
+                            name: "Value"
+                        }
+                    ]
+                },
+                true: {
+                    __typename: "ParameterReferenceExpression",
+                    name: "Value"
+                },
+                false: {
+                    __typename: "AbortLiteralExpression"
+                }
             }
         }
     },
-    /*{
+    {
         __typename: "CallExpression",
         callee: "Multiply",
         parameters: [
@@ -522,10 +551,10 @@ const testDoc: ast = [
             },
             {
                 __typename: "NumberLiteralExpression",
-                value: 4
+                value: 8
             }
         ]
-    },*/
+    },
     {
         __typename: "CallExpression",
         callee: "Add",
@@ -550,7 +579,7 @@ const testDoc: ast = [
             },
             {
                 __typename: "NumberLiteralExpression",
-                value: 2
+                value: 3
             }
         ]
     }
