@@ -1,6 +1,5 @@
-import { ast, evalAst } from "./index";
 import grammar from "./g.ohm-recipe";
-import fs from "fs";
+import { ast } from "./types";
 
 export default function parse(input: string): ast {
     const semantics = grammar.createSemantics();
@@ -119,14 +118,3 @@ export default function parse(input: string): ast {
         throw new Error(match.message);
     }
 }
-
-function parseExampleProgram() {
-    return parse(fs.readFileSync("./exampleProgram.type", "utf8"));
-}
-
-// Read the exampleProgram.type and parse/run it
-function runExampleProgram() {
-    return evalAst(parse(fs.readFileSync("./exampleProgram.type", "utf8")));
-}
-
-console.log(JSON.stringify(runExampleProgram(), null, 4));

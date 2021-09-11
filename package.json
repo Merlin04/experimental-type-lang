@@ -1,5 +1,5 @@
 {
-  "name": "Type-system-thing-AST",
+  "name": "experimental-type-lang",
   "version": "1.0.0",
   "main": "index.js",
   "license": "MIT",
@@ -15,6 +15,7 @@
     "ohm-js": "^16.0.0-pre.2"
   },
   "scripts": {
-    "generate": "ohm generateRecipes --withTypes './g.ohm'"
+    "generate": "ohm generateRecipes --withTypes './g.ohm'",
+    "eval": "ts-node index.ts"
   }
 }
