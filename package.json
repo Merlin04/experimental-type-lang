@@ -5,8 +5,16 @@
   "license": "MIT",
   "private": true,
   "devDependencies": {
+    "@ohm-js/cli": "^0.1.0",
     "@types/node": "^16.9.1",
     "ts-node": "^10.2.1",
     "typescript": "^4.4.2"
+  },
+  "dependencies": {
+    "fast-glob": "^3.2.7",
+    "ohm-js": "^16.0.0-pre.2"
+  },
+  "scripts": {
+    "generate": "ohm generateRecipes --withTypes './g.ohm'"
   }
 }

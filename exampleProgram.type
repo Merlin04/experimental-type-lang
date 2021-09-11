@@ -1,6 +1,6 @@
 type Add<N1, N2> = [...N1, ...N2];
 
-type Subtract<N1, N2> = N1 extends [infer Result, ...N2] ? Result : abort;
+type Subtract<N1, N2> = N1 extends [...infer Result, ...N2] ? Result : abort;
 
 type Multiply<N1, N2, T = []> = N2 extends 0 ? Flatten<T> : Multiply<N1, Subtract<N2, 1>, [N1, ...T]>;
 

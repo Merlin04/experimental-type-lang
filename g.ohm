@@ -1,0 +1,20 @@
+Type {
+    Program = ListOf<AstItem, ";">
+    AstItem = TypeDeclaration | Expression | ""
+    TypeDeclaration = "type " identifier "<" ListOf<TypeParameterDeclaration, ","> ">" "=" Expression
+    TypeParameterDeclaration = (identifier "=" Expression) -- defaultValue
+        | identifier
+    Expression = ParensExpression | CallExpression | number | ItemLiteralExpression | ArrayLiteralExpression | ConditionExpression | AbortLiteralExpression | ParameterReferenceExpression
+    ParensExpression = "(" Expression ")"
+    CallExpression = identifier "<" ListOf<Expression, ","> ">"
+    ItemLiteralExpression = "_"
+    ArrayLiteralExpression = "[" ListOf<(SpreadExpression | Expression), ","> "]"
+    SpreadExpression = "..." Expression
+    ConditionExpression = Expression "extends" (ArrayLiteralExpression | ExtendsExpression | Expression) "?" Expression ":" Expression
+    ExtendsExpression = "[" ListOf<(InferExpression | SpreadExpression | Expression), ","> "]"
+    InferExpression = ("...infer " | "infer ") identifier
+    AbortLiteralExpression = "abort"
+    ParameterReferenceExpression = identifier
+    number = digit+
+    identifier = (letter | digit)+
+}
