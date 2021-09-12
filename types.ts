@@ -52,12 +52,17 @@ type ConditionExpression = {
 export type _InferExpression = {
     __typename: "InferExpression";
     spread: boolean;
-    name: string;
+    name: string | undefined;
+};
+
+export type _SkipExpression = {
+    __typename: "SkipExpression";
+    param: Expression;
 };
 
 type _ExtendsExpression = {
     __typename: "ExtendsExpression"
-    items: (Expression | _InferExpression | _SpreadExpression)[];
+    items: (Expression | _InferExpression | _SkipExpression | _SpreadExpression)[];
 };
 
 type ParameterReferenceExpression = {

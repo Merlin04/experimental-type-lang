@@ -25,10 +25,12 @@ export interface TypeActionDict<T> extends ActionDict<T> {
   SpreadExpression?: (this: NonterminalNode, arg0: TerminalNode, arg1: NonterminalNode) => T;
   ConditionExpression?: (this: NonterminalNode, arg0: NonterminalNode, arg1: TerminalNode, arg2: NonterminalNode, arg3: TerminalNode, arg4: NonterminalNode, arg5: TerminalNode, arg6: NonterminalNode) => T;
   ExtendsExpression?: (this: NonterminalNode, arg0: TerminalNode, arg1: NonterminalNode, arg2: TerminalNode) => T;
-  InferExpression?: (this: NonterminalNode, arg0: TerminalNode, arg1: NonterminalNode) => T;
+  inferExpression?: (this: NonterminalNode, arg0: TerminalNode, arg1: IterationNode, arg2: IterationNode) => T;
+  SkipExpression?: (this: NonterminalNode, arg0: TerminalNode, arg1: NonterminalNode) => T;
   AbortLiteralExpression?: (this: NonterminalNode, arg0: TerminalNode) => T;
   ParameterReferenceExpression?: (this: NonterminalNode, arg0: NonterminalNode) => T;
   number?: (this: NonterminalNode, arg0: IterationNode) => T;
+  reservedWord?: (this: NonterminalNode, arg0: TerminalNode) => T;
   identifier?: (this: NonterminalNode, arg0: IterationNode) => T;
 }
 

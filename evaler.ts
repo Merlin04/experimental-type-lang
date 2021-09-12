@@ -1,5 +1,5 @@
 import { objectEquals } from "./utils";
-import { ast, Expression, InternalItem, TypeDeclaration, _InferExpression, _SpreadExpression } from "./types";
+import { ast, Expression, InternalItem, TypeDeclaration, _InferExpression, _SkipExpression, _SpreadExpression } from "./types";
 
 export default function evalAst(ast: ast) {
     return ast.filter(item => item.__typename !== "TypeDeclaration").map((e) => normalizeItem(evalExpression(e as Expression, ast, {})));
@@ -38,6 +38,7 @@ function evalExpression(e: Expression, ast: ast, values: {
                         return [parameter.name, evalExpression(e.parameters[index], ast, values)];
                     }
                     else if(parameter.defaultValue) {
+                        // TODO: allow accessing other parameters in the default value
                         return [parameter.name, evalExpression(parameter.defaultValue, ast, {})];
                     }
                     else {
@@ -105,12 +106,14 @@ function evalExpression(e: Expression, ast: ast, values: {
 
                 // Evaluate all the expressions in the array except for the infers
                 // It's easiest to do this by splitting it up into separate arrays of non-infer items, evaluating each, then merging them
-                const items: ((Expression | _SpreadExpression)[] | _InferExpression)[] = [];
+                const items: ((Expression | _SpreadExpression)[] | _InferExpression | _SkipExpression)[] = [];
                 let activeArray: (Expression | _SpreadExpression)[] = [];
                 e.condition.items.forEach(item => {
-                    if(item.__typename === "InferExpression") {
-                        items.push(activeArray);
-                        activeArray = [];
+                    if(item.__typename === "InferExpression" || item.__typename === "SkipExpression") {
+                        if(activeArray.length > 0) {
+                            items.push(activeArray);
+                            activeArray = [];
+                        }
                         items.push(item);
                     }
                     else {
@@ -132,7 +135,7 @@ function evalExpression(e: Expression, ast: ast, values: {
                     }
                 });
                 // Flatten it
-                const flattened: (InternalItem | _InferExpression)[] = [];
+                const flattened: (InternalItem | _InferExpression | _SkipExpression)[] = [];
                 evaledItems.forEach(item => {
                     if(Array.isArray(item)) {
                         item.forEach(i => flattened.push(i));
@@ -142,6 +145,22 @@ function evalExpression(e: Expression, ast: ast, values: {
                             for(let i = 0; i < item.length; i++) flattened.push({
                                 __typename: "Item"
                             });
+                        }
+                        else if(item.__typename === "SkipExpression") {
+                            // Just add infer with name set to undefined
+                            const evaledParam = evalExpression(item.param, ast, values);
+                            if(!Array.isArray(evaledParam) && evaledParam.__typename === "Number") {
+                                for(let i = 0; i < evaledParam.length; i++) {
+                                    flattened.push({
+                                        __typename: "InferExpression",
+                                        name: undefined,
+                                        spread: false
+                                    });
+                                }
+                            }
+                            else {
+                                throw new Error("Non-number value passed to skip");
+                            }
                         }
                         else {
                             flattened.push(item);
@@ -168,7 +187,7 @@ function evalExpression(e: Expression, ast: ast, values: {
                             spreadInferRangeStart = i;
                             break;
                         }
-                        else {
+                        else if(flattenedItem.name) {
                             inferredValues[flattenedItem.name] = normalizedEvaluatee[i];
                         }
                     }
@@ -181,11 +200,11 @@ function evalExpression(e: Expression, ast: ast, values: {
                         const flattenedItem = flattened[j];
                         if(!Array.isArray(flattenedItem) && flattenedItem.__typename === "InferExpression") {
                             if(flattenedItem.spread) {
-                                inferredValues[flattenedItem.name] = normalizedEvaluatee.slice(spreadInferRangeStart, i + 1);
+                                if(flattenedItem.name) inferredValues[flattenedItem.name] = normalizedEvaluatee.slice(spreadInferRangeStart, i + 1);
                                 break;
                             }
                             else {
-                                inferredValues[flattenedItem.name] = normalizedEvaluatee[i];
+                                if(flattenedItem.name) inferredValues[flattenedItem.name] = normalizedEvaluatee[i];
                             }
                         }
                         else if(!objectEquals(flattenedItem, normalizedEvaluatee[i])) {
@@ -207,9 +226,14 @@ function evalExpression(e: Expression, ast: ast, values: {
             }
         }
         case "ParameterReferenceExpression": {
-            return values[e.name];
+            const v = values[e.name];
+            if(v === undefined) {
+                throw new Error(`Parameter ${e.name} is undefined`);
+            }
+            return v;
         }
         case "AbortLiteralExpression": {
+            // TODO: Make abort accept an error message
             throw new Error("Exiting due to abort keyword");
         }
     }

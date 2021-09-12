@@ -70,11 +70,18 @@ export default function parse(input: string): ast {
                 items: items.toAST()
             };
         },
-        InferExpression(prefix, expression) {
+        inferExpression(prefix, _, expression) {
+            const name = expression.toAST()[0];
             return {
                 __typename: "InferExpression",
-                spread: prefix.source.contents === "...infer ",
-                name: expression.toAST()
+                spread: prefix.source.contents === "...infer",
+                name
+            };
+        },
+        SkipExpression(_, expression) {
+            return {
+                __typename: "SkipExpression",
+                param: expression.toAST()
             };
         },
         AbortLiteralExpression(_) {
