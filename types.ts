@@ -27,8 +27,9 @@ type ItemLiteralExpression = {
     __typename: "ItemLiteralExpression";
 };
 
-type AbortLiteralExpression = {
-    __typename: "AbortLiteralExpression"
+type AbortExpression = {
+    __typename: "AbortExpression";
+    message: string | undefined;
 }
 
 type ArrayLiteralExpression = {
@@ -70,7 +71,7 @@ type ParameterReferenceExpression = {
     name: string;
 }
 
-export type Expression = CallExpression | NumberLiteralExpression | ItemLiteralExpression | ArrayLiteralExpression | ConditionExpression | ParameterReferenceExpression | AbortLiteralExpression;
+export type Expression = CallExpression | NumberLiteralExpression | ItemLiteralExpression | ArrayLiteralExpression | ConditionExpression | ParameterReferenceExpression | AbortExpression;
 
 export type InternalItem = {
     __typename: "Item"

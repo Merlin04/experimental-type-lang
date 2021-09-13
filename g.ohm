@@ -4,7 +4,7 @@ Type {
     TypeDeclaration = "type " identifier "<" ListOf<TypeParameterDeclaration, ","> ">" "=" Expression
     TypeParameterDeclaration = (identifier "=" Expression) -- defaultValue
         | identifier
-    Expression = ParensExpression | ConditionExpression | CallExpression | number | ItemLiteralExpression | ArrayLiteralExpression | AbortLiteralExpression | ParameterReferenceExpression
+    Expression = ParensExpression | ConditionExpression | CallExpression | number | ItemLiteralExpression | ArrayLiteralExpression | AbortExpression | ParameterReferenceExpression
     ParensExpression = "(" Expression ")"
     CallExpression = identifier "<" ListOf<Expression, ","> ">"
     ItemLiteralExpression = "_"
@@ -14,7 +14,8 @@ Type {
     ExtendsExpression = "[" ListOf<(inferExpression | SkipExpression | SpreadExpression | Expression), ","> "]"
     inferExpression = ("...infer" | "infer") ((" " identifier) ?)
     SkipExpression = "skip " Expression
-    AbortLiteralExpression = "abort"
+    AbortExpression = "abort(" ("\\)" | ~")" any)* ")" --withMessage
+        | "abort" -- noMessage
     ParameterReferenceExpression = identifier
     number = digit+
     reservedWord = "abort" | "infer" | "skip"

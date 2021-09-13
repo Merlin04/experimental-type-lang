@@ -32,20 +32,24 @@ function evalExpression(e: Expression, ast: ast, values: {
             if(!def) {
                 throw new Error(`Type definition with name ${e.callee} not found`);
             }
-            return evalExpression(def.definition, ast, Object.fromEntries(def.parameters.map(
+            const newValues: {
+                [key: string]: InternalItem
+            } = {};
+            def.parameters.forEach(
                 (parameter, index) => {
                     if(e.parameters[index]) {
-                        return [parameter.name, evalExpression(e.parameters[index], ast, values)];
+                        newValues[parameter.name] = evalExpression(e.parameters[index], ast, values);
                     }
                     else if(parameter.defaultValue) {
                         // TODO: allow accessing other parameters in the default value
-                        return [parameter.name, evalExpression(parameter.defaultValue, ast, {})];
+                        newValues[parameter.name] = evalExpression(parameter.defaultValue, ast, newValues);
                     }
                     else {
                         throw new Error(`No value passed for parameter ${parameter.name} when calling type ${def.name}`);
                     }
                 }
-            )));
+            );
+            return evalExpression(def.definition, ast, newValues);
         }
         case "NumberLiteralExpression": {
             return {
@@ -232,9 +236,8 @@ function evalExpression(e: Expression, ast: ast, values: {
             }
             return v;
         }
-        case "AbortLiteralExpression": {
-            // TODO: Make abort accept an error message
-            throw new Error("Exiting due to abort keyword");
+        case "AbortExpression": {
+            throw new Error("Exiting due to abort keyword" + (e.message !== undefined ? ": " + e.message : ""));
         }
     }
 }
