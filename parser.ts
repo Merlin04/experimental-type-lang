@@ -84,9 +84,15 @@ export default function parse(input: string): ast {
                 param: expression.toAST()
             };
         },
-        AbortLiteralExpression(_) {
+        AbortExpression_noMessage(_) {
             return {
-                __typename: "AbortLiteralExpression"
+                __typename: "AbortExpression"
+            };
+        },
+        AbortExpression_withMessage(_, message, _2) {
+            return {
+                __typename: "AbortExpression",
+                message: message.sourceString
             };
         },
         ParameterReferenceExpression(name) {
