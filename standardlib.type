@@ -1,3 +1,5 @@
+// Standard library
+
 type Add<N1, N2> = [...N1, ...N2];
 type At<Array, Position> = Array extends [skip Position, infer Item, ...infer] ? Item : abort;
 type Subtract<N1, N2> = N1 extends [...N2, ...infer Result] ? Result : [_, Subtract<N2, N1>];
@@ -11,9 +13,8 @@ type Divide<N1, N2, Result = 0> = IsLessThan<N1, N2> extends True<> ? [Result, N
 type Modulo<N1, N2> = At<Divide<N1, N2>, 1>;
 type IsEven<N> = Modulo<N, 2> extends 0 ? True<> : False<>;
 type IsOdd<N> = Modulo<N, 2> extends 0 ? False<> : True<>;
+type Pow<N1, N2, Result = 1> = N2 extends 0 ? Result : Multiply<N1, Pow<N1, Subtract<N2, 1>, Result>>;
+type Factorial<N, Result = 1> = N extends 0 ? Result : Multiply<N, Factorial<Subtract<N, 1>>>;
 
 type Fibonacci<N, Result = 0> = N extends 0 ? Result : N extends 1 ? 1 : Add<Fibonacci<Subtract<N, 1>>, Fibonacci<Subtract<N, 2>>>;
 type FibonacciSequenceUpTo<N, Result = []> = N extends 0 ? Result : FibonacciSequenceUpTo<Subtract<N, 1>, [Fibonacci<N>, ...Result]>;
-
-type Pow<N1, N2, Result = 1> = N2 extends 0 ? Result : Multiply<N1, Pow<N1, Subtract<N2, 1>, Result>>;
-type Factorial<N, Result = 1> = N extends 0 ? Result : Multiply<N, Factorial<Subtract<N, 1>>>;

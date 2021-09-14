@@ -13,6 +13,10 @@ import {
 
 export interface TypeActionDict<T> extends ActionDict<T> {
   Program?: (this: NonterminalNode, arg0: NonterminalNode) => T;
+  comment_singleLineComment?: (this: NonterminalNode, arg0: TerminalNode, arg1: IterationNode) => T;
+  comment_multiLineComment?: (this: NonterminalNode, arg0: TerminalNode, arg1: IterationNode, arg2: TerminalNode) => T;
+  comment?: (this: NonterminalNode, arg0: NonterminalNode) => T;
+  space?: (this: NonterminalNode, arg0: NonterminalNode | TerminalNode) => T;
   AstItem?: (this: NonterminalNode, arg0: NonterminalNode | TerminalNode) => T;
   TypeDeclaration?: (this: NonterminalNode, arg0: TerminalNode, arg1: NonterminalNode, arg2: TerminalNode, arg3: NonterminalNode, arg4: TerminalNode, arg5: TerminalNode, arg6: NonterminalNode) => T;
   TypeParameterDeclaration_defaultValue?: (this: NonterminalNode, arg0: NonterminalNode, arg1: TerminalNode, arg2: NonterminalNode) => T;

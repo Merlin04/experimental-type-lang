@@ -1,5 +1,8 @@
 Type {
     Program = ListOf<AstItem, ";">
+    comment = "// " (~"\n" any)* -- singleLineComment
+        | "/*" (~"*/" any)* "*/" -- multiLineComment
+    space += comment
     AstItem = TypeDeclaration | Expression | ""
     TypeDeclaration = "type " identifier "<" ListOf<TypeParameterDeclaration, ","> ">" "=" Expression
     TypeParameterDeclaration = (identifier "=" Expression) -- defaultValue
