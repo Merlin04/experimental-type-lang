@@ -19,7 +19,7 @@ export default function evalAst(ast: ast) {
 function makeHumanReadable(item: InternalItem): string {
     if(Array.isArray(item)) {
         if(!Array.isArray(item[0]) && item[0].__typename === "Number" && item[0].length === STRING_MAGIC_NUMBER && Array.isArray(item[1]) && item[1].reduce((acc, cur) => acc && !Array.isArray(cur) && cur.__typename === "Number", true)) {
-            return item[1].map(item => String.fromCharCode((item as { __typename: "Number", length: number }).length)).join("");
+            return `"${item[1].map(item => String.fromCharCode((item as { __typename: "Number", length: number }).length)).join("").replaceAll("\"", "\\\"")}"`;
         }
         return `[${item.map(makeHumanReadable).join(", ")}]`;
     }
