@@ -2,7 +2,27 @@ import { objectEquals } from "./utils";
 import { ast, Expression, InternalItem, TypeDeclaration, _InferExpression, _SkipExpression, _SpreadExpression } from "./types";
 
 export default function evalAst(ast: ast) {
-    return ast.filter(item => item.__typename !== "TypeDeclaration").map((e) => normalizeItem(evalExpression(e as Expression, ast, {})));
+    return ast.filter(item => item.__typename !== "TypeDeclaration").reduce((acc, e, index) => {
+        const prefix = `${acc}\n${index}> `;
+        try {
+            return prefix + makeHumanReadable(normalizeItem(evalExpression(e as Expression, ast, {})));
+        }
+        catch(e) {
+            return prefix + `${(e as Error).name}: ${(e as Error).message}`;
+        }
+    }, "").trim();
+}
+
+function makeHumanReadable(item: InternalItem): string {
+    if(Array.isArray(item)) {
+        return `[${item.map(makeHumanReadable).join(", ")}]`;
+    }
+    else if(item.__typename === "Number") {
+        return `${item.length}`;
+    }
+    else {
+        return "_";
+    }
 }
 
 function normalizeItem(i: InternalItem): InternalItem {

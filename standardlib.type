@@ -20,6 +20,7 @@ type Factorial<N, Result = 1> = N extends 0 ? Result : Multiply<N, Factorial<Sub
 type Fibonacci<N, Result = 0> = N extends 0 ? Result : N extends 1 ? 1 : Add<Fibonacci<Subtract<N, 1>>, Fibonacci<Subtract<N, 2>>>;
 type FibonacciSequenceUpTo<N, Result = []> = N extends 0 ? Result : FibonacciSequenceUpTo<Subtract<N, 1>, [Fibonacci<N>, ...Result]>;
 
+// Since we can't do floating point math, we'll just use a binary search and abort if the number isn't a perfect square.
 // Based off of method 2 from https://www.geeksforgeeks.org/check-if-a-number-is-perfect-square-without-finding-square-root/
 type Sqrt<N, Left = 1, Right = N> = IsLessThanOrEq<Left, Right> extends False<> ? abort(Number is not perfect square)
     : At<Divide<Add<Left, Right>, 2>, 0> extends [...infer Mid]
@@ -27,3 +28,10 @@ type Sqrt<N, Left = 1, Right = N> = IsLessThanOrEq<Left, Right> extends False<> 
             ? M extends N ? Mid : IsLessThan<M, N> extends True<> ? Sqrt<N, Add<Mid, 1>, Right> : Sqrt<N, Left, Subtract<Mid, 1>>
             : abort
         : abort;
+
+// Test cases for the standard library
+FibonacciSequenceUpTo<10>;
+Sqrt<25>;
+Add<[1, 2, 3], [4, 5, 6]>;
+Subtract<[1, 2, 3], [4, 5, 6]>;
+Multiply<5, 8>;
