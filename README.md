@@ -28,39 +28,21 @@ You can evaluate expressions by just writing them; the interpreter will print ou
 
 ```
 WrapSomethingInAnArray<5>;
-> [
-      {
-          "__typename": "Number",
-          "length": 5
-      }
-  ]
+0> [5]
 ```
 
-Right now the interpreter returns a JSON version of the internal representation of the data. It tries to avoid actually storing numbers as arrays of items for performance, so even if the expression being evaluated isn't directly a number the output might be:
+Right now the interpreter returns a human readable version of the internal representation of the data. It tries to avoid actually storing numbers as arrays of items for performance, so even if the expression being evaluated isn't directly a number the output might be:
 
 ```
 [_];
-> {
-      "__typename": "Number",
-      "length": 1
-  }
+0> 1
 ```
 
 However, items still exist internally, as the interpreter isn't perfectly optimized:
 
 ```
-WrapSomethingInAnArray<[_, 6]>;
-> [
-      [
-          {
-              "__typename": "Item"
-          },
-          {
-              "__typename": "Number",
-              "length": 6
-          }
-      ]
-  ]
+WrapSomethingInAnArray<[_, _, _, 6]>;
+0> [[_, _, _, 6]]
 ```
 
 So how do we actually do anything with data? Two ways - array spreads and condition expressions.
@@ -69,32 +51,7 @@ Array spreads work like you'd expect:
 
 ```
 [...[1, 2, 3], ...[4, 5, 6]];
-> [
-      {
-          "__typename": "Number",
-          "length": 1
-      },
-      {
-          "__typename": "Number",
-          "length": 2
-      },
-      {
-          "__typename": "Number",
-          "length": 3
-      },
-      {
-          "__typename": "Number",
-          "length": 4
-      },
-      {
-          "__typename": "Number",
-          "length": 5
-      },
-      {
-          "__typename": "Number",
-          "length": 6
-      }
-  ]
+0> [1, 2, 3, 4, 5, 6]
 ```
 
 Because numbers are just arrays of items, we can use a spread expression to make an add function by concatenating the numbers together:
@@ -103,10 +60,7 @@ Because numbers are just arrays of items, we can use a spread expression to make
 type Add<N1, N2> = [...N1, ...N2];
 
 Add<5, 6>;
-> {
-      "__typename": "Number",
-      "length": 11
-  }
+0> 11
 ```
 
 However, this only gets us so far. The other tool is conditional expressions, which look like this:
@@ -115,16 +69,10 @@ However, this only gets us so far. The other tool is conditional expressions, wh
 type Test<Input> = Input extends 5 ? 1 : 0;
 
 Test<5>;
-> {
-      "__typename": "Number",
-      "length": 1
-  }
+0> 1
 
 Test<4>;
-> {
-      "__typename": "Number",
-      "length": 0
-  }
+1> 0
 ```
 
 When used like this, it's just an if statement. But, using the `infer` keyword you can do more complicated things:
@@ -133,18 +81,13 @@ When used like this, it's just an if statement. But, using the `infer` keyword y
 type GetSecondArrayItem<Input> = Input extends [infer, infer B, ...infer] ? B : abort;
 
 GetSecondArrayItem<[5, 6, 7, 8]>;
-> {
-      "__typename": "Number",
-      "length": 6
-  }
+0> 6
 
 GetSecondArrayItem<4>;
-> {
-      "__typename": "Item"
-  }
+1> _
 
 GetSecondArrayItem<[1]>;
-> Error: Exiting due to abort keyword
+2> Error: Exiting due to abort keyword
 ```
 
 The `infer` keyword causes the interpreter to figure out what is in that position and allow you to access it. `...infer` acts similarly but it provides an array of any number of items. If you don't actually need the value of the inferred item just don't pass an identifier.
@@ -155,13 +98,10 @@ You can use both `infer` and other expressions at once:
 type Test<Input> = Input extends [5, 6, infer Item, 8] ? Item : abort;
 
 Test<[5, 6, 10, 8]>;
-> {
-      "__typename": "Number",
-      "length": 10
-  }
+0> 10
 
 Test<[1, 2, 5, 8]>;
-> Error: Exiting due to abort keyword
+1> Error: Exiting due to abort keyword
 ```
 
 (Oh, and `abort` just causes the program to throw an error - it's great for handling invalid input.)
@@ -188,19 +128,13 @@ Subtraction can be thought of as how many items are left over after you take awa
 type Subtract<N1, N2> = N1 extends [...N2, ...infer Result] ? Result : abort;
 
 Subtract<5, 2>;
-> {
-      "__typename": "Number",
-      "length": 3
-  }
+0> 3
 
 Subtract<5, 5>;
-> {
-      "__typename": "Number",
-      "length": 0
-  }
+1> 0
 
 Subtract<5, 8>;
-> Error: Exiting due to abort keyword
+2> Error: Exiting due to abort keyword
 ```
 
 The last case exited because `N2` was bigger than `N1` so no matter how many items `Result` contained the array could never be the same length as `N1`. We can handle that case by attempting the subtraction again with the inputs swapped and providing a sort of flag to indicate that the number was negative:
@@ -209,15 +143,7 @@ The last case exited because `N2` was bigger than `N1` so no matter how many ite
 type Subtract<N1, N2> = N1 extends [...N2, ...infer Result] ? Result : [_, Subtract<N2, N1>];
 
 Subtract<5, 8>;
-> [
-      {
-          "__typename": "Item"
-      },
-      {
-          "__typename": "Number",
-          "length": 3
-      }
-  ]
+0> [_, 3]
 ```
 
 And we can handle this result in a few ways:
@@ -226,27 +152,18 @@ And we can handle this result in a few ways:
 type AbsoluteValue<Input> = Input extends [_, infer Number] ? Number : Input;
 
 AbsoluteValue<Subtract<5, 2>>;
-> {
-      "__typename": "Number", 
-      "length": 3
-  }
+0> 3
 
 AbsoluteValue<Subtract<5, 8>>;
-> {
-      "__typename": "Number",
-      "length": 3
-  }
+1> 3
 
 type EnsurePositive<Input> = Input extends [_, infer] ? abort : Input;
 
 EnsurePositive<Subtract<5, 2>>;
-> {
-      "__typename": "Number",
-      "length": 3
-  }
+2> 3
 
 EnsurePositive<Subtract<5, 8>>;
-> Error: Exiting due to abort keyword
+3> Error: Exiting due to abort keyword
 ```
 
 Now let's try multiplication! Multiplication is just repeatedly adding the one number to itself another number of times, so we can keep a `Result` value and call `Multiply` to add `N1` to the `Result` until `N2` reaches 0. We can use a parameter with a default value to provide a sort of variable.
@@ -267,19 +184,17 @@ Now, let's try division. Similarly to how multiplication is repeated addition, d
 
 To start, we'll make a utility type to check if a number is smaller than another. We'll use this in the `Divide` type to check if it's time to stop the subtraction. We'll also define true and false types (the actual value doesn't matter).
 
-Also, from this point onwards I'm going to stop giving the whole JSON object for the output, it isn't very useful.
-
 ```
 type True<> = 1;
 type False<> = 0;
 type IsLessThan<N1, N2> = N1 extends [...N2, ...infer] ? False<> : True<>;
 
 IsLessThan<5, 3>;
-> 0
+0> 0
 IsLessThan<5, 5>;
-> 0
+1> 0
 IsLessThan<3, 5>;
-> 1
+2> 1
 ```
 
 Now we can make the division. It will repeatedly subtract `N2` from `N1` and increment `Result` until `N1` is less than `N2`. We'll also return the remainder because why not:
@@ -288,11 +203,11 @@ Now we can make the division. It will repeatedly subtract `N2` from `N1` and inc
 type Divide<N1, N2, Result = 0> = IsLessThan<N1, N2> extends True<> ? [Result, N1] : Divide<Subtract<N1, N2>, N2, Add<Result, 1>>;
 
 Divide<10, 2>;
-> [5, 0]
+0> [5, 0]
 Divide<8, 3>;
-> [2, 2]
+1> [2, 2]
 Divide<100, 11>;
-> [9, 1]
+2> [9, 1]
 ```
 
 We can use the array indexing method from before to create a modulo function:
@@ -301,14 +216,14 @@ We can use the array indexing method from before to create a modulo function:
 type Modulo<N1, N2> = At<Divide<N1, N2>, 1>;
 
 Modulo<10, 2>;
-> 0
+0> 0
 Modulo<8, 3>;
-> 2
+1> 2
 Modulo<100, 11>;
-> 1
+2> 1
 ```
 
-TODO: create fizzbuzz
+TODO: explain strings and fizzbuzz (if you're reading this right now it can be found in `standardlib.type`)
 
 ## Technical details
 
