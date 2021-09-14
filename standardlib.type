@@ -29,9 +29,33 @@ type Sqrt<N, Left = 1, Right = N> = IsLessThanOrEq<Left, Right> extends False<> 
             : abort
         : abort;
 
+type STRING_MAGIC_NUMBER<> = At<"", 0>;
+type MakeString<A> = [STRING_MAGIC_NUMBER<>, A];
+type _NumberToStringInner<N> = Divide<N, 10> extends [infer R, infer Remainder]
+    ? Remainder extends 0
+        ? []
+        : [
+            ..._NumberToStringInner<R>,
+            Add<At<ToCharArray<"0">, 0>, Remainder>
+        ]
+    : abort;
+type NumberToString<N> = MakeString<_NumberToStringInner<N>>;
+type ToCharArray<S> = At<S, 1>;
+type _FizzBuzzUpToInner<Limit, N = 1> = N extends Limit
+    ? []
+    : [
+        ...ToCharArray<", ">,
+        ...ToCharArray<Modulo<N, 3> extends 0
+            ? (Modulo<N, 5> extends 0 ? "FizzBuzz" : "Fizz")
+            : Modulo<N, 5> extends 0 ? "Buzz" : NumberToString<N>>,
+        ..._FizzBuzzUpToInner<Limit, Add<N, 1>>
+    ];
+type FizzBuzzUpTo<Limit> = MakeString<_FizzBuzzUpToInner<Add<Limit, 1>> extends [skip 2, ...infer rest] ? rest : abort>;
+
 // Test cases for the standard library
 FibonacciSequenceUpTo<10>;
 Sqrt<25>;
 Add<[1, 2, 3], [4, 5, 6]>;
 Subtract<[1, 2, 3], [4, 5, 6]>;
 Multiply<5, 8>;
+FizzBuzzUpTo<100>;

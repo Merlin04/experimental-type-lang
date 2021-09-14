@@ -95,6 +95,12 @@ export default function parse(input: string): ast {
                 message: message.sourceString
             };
         },
+        stringExpression(_, text, _2) {
+            return {
+                __typename: "StringExpression",
+                text: text.sourceString
+            };
+        },
         ParameterReferenceExpression(name) {
             return {
                 __typename: "ParameterReferenceExpression",

@@ -12,7 +12,8 @@
   },
   "dependencies": {
     "fast-glob": "^3.2.7",
-    "ohm-js": "^16.0.0-pre.2"
+    "ohm-js": "^16.0.0-pre.2",
+    "ts-replace-all": "^1.0.0"
   },
   "scripts": {
     "generate": "ohm generateRecipes --withTypes './g.ohm'",

@@ -1,5 +1,8 @@
 import { objectEquals } from "./utils";
 import { ast, Expression, InternalItem, TypeDeclaration, _InferExpression, _SkipExpression, _SpreadExpression } from "./types";
+import "ts-replace-all";
+
+const STRING_MAGIC_NUMBER = 51224;
 
 export default function evalAst(ast: ast) {
     return ast.filter(item => item.__typename !== "TypeDeclaration").reduce((acc, e, index) => {
@@ -15,6 +18,9 @@ export default function evalAst(ast: ast) {
 
 function makeHumanReadable(item: InternalItem): string {
     if(Array.isArray(item)) {
+        if(!Array.isArray(item[0]) && item[0].__typename === "Number" && item[0].length === STRING_MAGIC_NUMBER && Array.isArray(item[1]) && item[1].reduce((acc, cur) => acc && !Array.isArray(cur) && cur.__typename === "Number", true)) {
+            return item[1].map(item => String.fromCharCode((item as { __typename: "Number", length: number }).length)).join("");
+        }
         return `[${item.map(makeHumanReadable).join(", ")}]`;
     }
     else if(item.__typename === "Number") {
@@ -258,6 +264,23 @@ function evalExpression(e: Expression, ast: ast, values: {
         }
         case "AbortExpression": {
             throw new Error("Exiting due to abort keyword" + (e.message !== undefined ? ": " + e.message : ""));
+        }
+        case "StringExpression": {
+            const newStr = e.text.replaceAll("\\\"", "\"");
+            const arr: InternalItem[] = [];
+            for(let i = 0; i < newStr.length; i++) {
+                arr.push({
+                    __typename: "Number",
+                    length: newStr.charCodeAt(i)
+                });
+            }
+            return [
+                {
+                    __typename: "Number",
+                    length: STRING_MAGIC_NUMBER
+                },
+                arr
+            ];
         }
     }
 }

@@ -32,6 +32,11 @@ type AbortExpression = {
     message: string | undefined;
 }
 
+type StringExpression = {
+    __typename: "StringExpression";
+    text: string;
+}
+
 type ArrayLiteralExpression = {
     __typename: "ArrayLiteralExpression";
     items: (Expression | _SpreadExpression)[]
@@ -71,7 +76,7 @@ type ParameterReferenceExpression = {
     name: string;
 }
 
-export type Expression = CallExpression | NumberLiteralExpression | ItemLiteralExpression | ArrayLiteralExpression | ConditionExpression | ParameterReferenceExpression | AbortExpression;
+export type Expression = CallExpression | NumberLiteralExpression | ItemLiteralExpression | ArrayLiteralExpression | ConditionExpression | ParameterReferenceExpression | AbortExpression | StringExpression;
 
 export type InternalItem = {
     __typename: "Item"
