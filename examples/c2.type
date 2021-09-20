@@ -1,0 +1,5 @@
+import c1 from ./c1.type;
+
+export type GetNumber<> = 5;
+
+c1.Hello<>;

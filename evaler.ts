@@ -1,14 +1,56 @@
 import { objectEquals } from "./utils";
 import { ast, Expression, InternalItem, TypeDeclaration, _InferExpression, _SkipExpression, _SpreadExpression } from "./types";
+import parse from "./parser";
 import "ts-replace-all";
+import fs from "fs/promises";
 
 const STRING_MAGIC_NUMBER = 51224;
 
-export default function evalAst(ast: ast) {
-    return ast.filter(item => item.__typename !== "TypeDeclaration").reduce((acc, e, index) => {
+const contextCache: {
+    [key: string]: Context
+} = {};
+
+async function getContext(path: string, ast: ast): Promise<Context> {
+    if(contextCache[path]) return contextCache[path];
+    const context: Context = {
+        modules: {},
+        types: []
+    };
+    contextCache[path] = context;
+    for(const item of ast) {
+        if(item.__typename === "TypeDeclaration") {
+            context.types.push(item);
+        }
+        else if(item.__typename === "ImportDeclaration") {
+            const moduleAst = parse((await fs.readFile(item.path)).toString());
+            for(const importedItem of item.items) {
+                const typeDec = moduleAst.find(i => i.__typename === "TypeDeclaration" && i.name === importedItem) as TypeDeclaration | undefined;
+                if(!typeDec) {
+                    throw new Error(`Could not find type ${importedItem} in module ${item.path}`);
+                }
+                else if(!typeDec.export) {
+                    throw new Error(`Importing ${importedItem} from module ${item.path} failed as it is not exported`);
+                }
+                context.types.push({
+                    module: item.path,
+                    name: importedItem
+                });
+            }
+            context.modules[item.path] = {
+                alias: item.moduleName,
+                context: await getContext(item.path, moduleAst)
+            };
+        }
+    }
+    return context;
+}
+
+export default async function evalAst(path: string, ast: ast) {
+    const ctx = await getContext(path, ast);
+    return ast.filter(item => item.__typename !== "TypeDeclaration" && item.__typename !== "ImportDeclaration").reduce((acc, e, index) => {
         const prefix = `${acc}\n${index}> `;
         try {
-            return prefix + makeHumanReadable(normalizeItem(evalExpression(e as Expression, ast, {})));
+            return prefix + makeHumanReadable(normalizeItem(evalExpression(e as Expression, ast, {}, ctx)));
         }
         catch(e) {
             return prefix + `${(e as Error).name}: ${(e as Error).message}`;
@@ -48,34 +90,76 @@ function normalizeItem(i: InternalItem): InternalItem {
     }
 }
 
+type Context = {
+    modules: {
+        [path: string]: {
+            alias?: string;
+            context: Context;
+        }
+    };
+    types: (TypeDeclaration | {
+        module: string;
+        name: string;
+    })[];
+};
+
 function evalExpression(e: Expression, ast: ast, values: {
     [key: string]: InternalItem
-}): InternalItem {
+}, context: Context): InternalItem {
     switch(e.__typename) {
         case "CallExpression": {
-            // TODO: make sure that optional parameters are at the end
-            const def = ast.find(item => item.__typename === "TypeDeclaration" && item.name === e.callee) as TypeDeclaration | undefined;
-            if(!def) {
-                throw new Error(`Type definition with name ${e.callee} not found`);
+            let def: TypeDeclaration | undefined = undefined;
+            let callContext: Context | undefined = undefined;
+            if(e.module) {
+                const m = Object.entries(context.modules).find(i => i[1].alias === e.module);
+                if(!m) {
+                    throw new Error(`Could not find module ${e.module}`);
+                }
+                def = m[1].context.types.filter(type => 
+                    //@ts-expect-error
+                    type["__typename"] === "TypeDeclaration"
+                        && (type as TypeDeclaration).export
+                        && (type as TypeDeclaration).name === e.callee
+                )[0] as TypeDeclaration;
+                if(!def) {
+                    throw new Error(`Could not find type ${e.callee} in module ${e.module}`);
+                }
+
+                callContext = m[1].context;
             }
+            else {
+                let dObj = context.types.find(i => i.name === e.callee);
+                if(!dObj) {
+                    throw new Error(`Type definition with name ${e.callee} not found`);
+                }
+                const modulePath = (dObj as { module?: string }).module;
+                if(modulePath) {
+                    callContext = context.modules[modulePath].context as Context;
+                    def = callContext.types.filter(type => type.name === e.callee)[0] as TypeDeclaration;
+                }
+                else {
+                    def = dObj as unknown as TypeDeclaration;
+                }
+            }
+            // TODO: make sure that optional parameters are at the end
             const newValues: {
                 [key: string]: InternalItem
             } = {};
             def.parameters.forEach(
                 (parameter, index) => {
                     if(e.parameters[index]) {
-                        newValues[parameter.name] = evalExpression(e.parameters[index], ast, values);
+                        newValues[parameter.name] = evalExpression(e.parameters[index], ast, values, context);
                     }
                     else if(parameter.defaultValue) {
                         // TODO: allow accessing other parameters in the default value
-                        newValues[parameter.name] = evalExpression(parameter.defaultValue, ast, newValues);
+                        newValues[parameter.name] = evalExpression(parameter.defaultValue, ast, newValues, callContext ?? context);
                     }
                     else {
-                        throw new Error(`No value passed for parameter ${parameter.name} when calling type ${def.name}`);
+                        throw new Error(`No value passed for parameter ${parameter.name} when calling type ${(def as TypeDeclaration).name}`);
                     }
                 }
             );
-            return evalExpression(def.definition, ast, newValues);
+            return evalExpression(def.definition, ast, newValues, callContext ?? context);
         }
         case "NumberLiteralExpression": {
             return {
@@ -92,7 +176,7 @@ function evalExpression(e: Expression, ast: ast, values: {
             const val: InternalItem = [];
             for(const item of e.items) {
                 if(item.__typename === "SpreadExpression") {
-                    const res = evalExpression(item.value, ast, values);
+                    const res = evalExpression(item.value, ast, values, context);
                     if(Array.isArray(res)) {
                         res.forEach(i => val.push(i));
                     }
@@ -109,7 +193,7 @@ function evalExpression(e: Expression, ast: ast, values: {
                     }
                 }
                 else {
-                    val.push(evalExpression(item, ast, values));
+                    val.push(evalExpression(item, ast, values, context));
                 }
             }
             return val;
@@ -119,10 +203,10 @@ function evalExpression(e: Expression, ast: ast, values: {
             if(e.condition.__typename === "ExtendsExpression") {
                 // It's inferring things
                 // Helpful function
-                const fail = () => evalExpression(e.false, ast, values);
+                const fail = () => evalExpression(e.false, ast, values, context);
                 // Start off by evaluating the evaluatee and making sure it's the right type
                 // It has to be an array, it can't be just a number or item
-                let normalizedEvaluatee = normalizeItem(evalExpression(e.evaluatee, ast, values));
+                let normalizedEvaluatee = normalizeItem(evalExpression(e.evaluatee, ast, values, context));
                 if(!Array.isArray(normalizedEvaluatee)) {
                     if(normalizedEvaluatee.__typename === "Item") {
                         return fail();
@@ -158,7 +242,7 @@ function evalExpression(e: Expression, ast: ast, values: {
                         return normalizeItem(evalExpression({
                             __typename: "ArrayLiteralExpression",
                             items: item
-                        }, ast, values));
+                        }, ast, values, context));
                     }
                     else {
                         return item;
@@ -178,7 +262,7 @@ function evalExpression(e: Expression, ast: ast, values: {
                         }
                         else if(item.__typename === "SkipExpression") {
                             // Just add infer with name set to undefined
-                            const evaledParam = evalExpression(item.param, ast, values);
+                            const evaledParam = evalExpression(item.param, ast, values, context);
                             if(!Array.isArray(evaledParam) && evaledParam.__typename === "Number") {
                                 for(let i = 0; i < evaledParam.length; i++) {
                                     flattened.push({
@@ -245,14 +329,14 @@ function evalExpression(e: Expression, ast: ast, values: {
                 return evalExpression(e.true, ast, {
                     ...values,
                     ...inferredValues
-                });
+                }, context);
             }
             else {
                 // It's a bit easier
-                const res = normalizeItem(evalExpression(e.condition, ast, values));
-                const normalizedEvaluatee = normalizeItem(evalExpression(e.evaluatee, ast, values));
+                const res = normalizeItem(evalExpression(e.condition, ast, values, context));
+                const normalizedEvaluatee = normalizeItem(evalExpression(e.evaluatee, ast, values, context));
 
-                return evalExpression(e[objectEquals(res, normalizedEvaluatee) ? "true" : "false"], ast, values)
+                return evalExpression(e[objectEquals(res, normalizedEvaluatee) ? "true" : "false"], ast, values, context);
             }
         }
         case "ParameterReferenceExpression": {

@@ -2,4 +2,7 @@ import fs from "fs";
 import evalAst from "./evaler";
 import parse from "./parser";
 
-console.log(evalAst(parse(fs.readFileSync(process.argv.slice(2)[0], "utf8"))));
+(async () => {
+    const path = process.argv.slice(2)[0];
+    console.log(await evalAst(path, parse(fs.readFileSync(path, "utf8"))));
+})();

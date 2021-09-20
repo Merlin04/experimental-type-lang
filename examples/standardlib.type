@@ -1,0 +1,53 @@
+// Standard library
+
+export type Add<N1, N2> = [...N1, ...N2];
+export type At<Array, Position> = Array extends [skip Position, infer Item, ...infer] ? Item : abort(Array index out of bounds);
+export type Subtract<N1, N2> = N1 extends [...N2, ...infer Result] ? Result : [_, Subtract<N2, N1>];
+export type AbsoluteValue<Input> = Input extends [_, infer Number] ? Number : Input;
+export type EnsurePositive<Input> = Input extends [_, infer] ? abort(Value is not positive) : Input;
+export type Multiply<N1, N2, Result = 0> = N2 extends 0 ? Result : Multiply<N1, Subtract<N2, 1>, Add<Result, N1>>;
+export type True<> = 1;
+export type False<> = 0;
+export type IsLessThan<N1, N2> = N1 extends [...N2, ...infer] ? False<> : True<>;
+export type IsLessThanOrEq<N1, N2> = IsLessThan<Subtract<N1, 1>, N2>;
+export type Divide<N1, N2, Result = 0> = IsLessThan<N1, N2> extends True<> ? [Result, N1] : Divide<Subtract<N1, N2>, N2, Add<Result, 1>>;
+export type Modulo<N1, N2> = At<Divide<N1, N2>, 1>;
+export type IsEven<N> = Modulo<N, 2> extends 0 ? True<> : False<>;
+export type IsOdd<N> = Modulo<N, 2> extends 0 ? False<> : True<>;
+export type Pow<N1, N2, Result = 1> = N2 extends 0 ? Result : Multiply<N1, Pow<N1, Subtract<N2, 1>, Result>>;
+export type Factorial<N, Result = 1> = N extends 0 ? Result : Multiply<N, Factorial<Subtract<N, 1>>>;
+
+export type Fibonacci<N, Result = 0> = N extends 0 ? Result : N extends 1 ? 1 : Add<Fibonacci<Subtract<N, 1>>, Fibonacci<Subtract<N, 2>>>;
+export type FibonacciSequenceUpTo<N, Result = []> = N extends 0 ? Result : FibonacciSequenceUpTo<Subtract<N, 1>, [Fibonacci<N>, ...Result]>;
+
+// Since we can't do floating point math, we'll just use a binary search and abort if the number isn't a perfect square.
+// Based off of method 2 from https://www.geeksforgeeks.org/check-if-a-number-is-perfect-square-without-finding-square-root/
+export type Sqrt<N, Left = 1, Right = N> = IsLessThanOrEq<Left, Right> extends False<> ? abort(Number is not perfect square)
+    : At<Divide<Add<Left, Right>, 2>, 0> extends [...infer Mid]
+        ? Multiply<Mid, Mid> extends [...infer M]
+            ? M extends N ? Mid : IsLessThan<M, N> extends True<> ? Sqrt<N, Add<Mid, 1>, Right> : Sqrt<N, Left, Subtract<Mid, 1>>
+            : abort
+        : abort;
+
+export type STRING_MAGIC_NUMBER<> = At<"", 0>;
+export type MakeString<A> = [STRING_MAGIC_NUMBER<>, A];
+type _NumberToStringInner<N> = Divide<N, 10> extends [infer R, infer Remainder]
+    ? Remainder extends 0
+        ? []
+        : [
+            ..._NumberToStringInner<R>,
+            Add<At<ToCharArray<"0">, 0>, Remainder>
+        ]
+    : abort;
+export type NumberToString<N> = MakeString<_NumberToStringInner<N>>;
+export type ToCharArray<S> = At<S, 1>;
+type _FizzBuzzUpToInner<Limit, N = 1> = N extends Limit
+    ? []
+    : [
+        ...ToCharArray<", ">,
+        ...ToCharArray<Modulo<N, 3> extends 0
+            ? (Modulo<N, 5> extends 0 ? "FizzBuzz" : "Fizz")
+            : Modulo<N, 5> extends 0 ? "Buzz" : NumberToString<N>>,
+        ..._FizzBuzzUpToInner<Limit, Add<N, 1>>
+    ];
+export type FizzBuzzUpTo<Limit> = MakeString<_FizzBuzzUpToInner<Add<Limit, 1>> extends [skip 2, ...infer rest] ? rest : abort>;

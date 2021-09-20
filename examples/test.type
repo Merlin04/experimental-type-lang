@@ -1,0 +1,10 @@
+import { Add }, Std from ./standardlib.type;
+
+type Test<> = 5;
+
+Std.Subtract<Test<>, Add<2, 5>>;
+
+Subtract<5, 4>;
+Test<>;
+
+Std.FizzBuzzUpTo<100>;

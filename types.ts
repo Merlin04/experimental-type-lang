@@ -1,4 +1,4 @@
-export type ast = (TypeDeclaration | Expression)[];
+export type ast = (TypeDeclaration | ImportDeclaration | Expression)[];
 
 type TypeParameterDeclaration = {
     name: string;
@@ -10,12 +10,21 @@ export type TypeDeclaration = {
     name: string;
     parameters: TypeParameterDeclaration[];
     definition: Expression;
+    export: boolean;
 };
+
+type ImportDeclaration = {
+    __typename: "ImportDeclaration";
+    path: string;
+    moduleName?: string;
+    items: string[];
+}
 
 type CallExpression = {
     __typename: "CallExpression";
+    module: string | undefined;
     callee: string;
-    parameters: Expression[]
+    parameters: Expression[];
 };
 
 type NumberLiteralExpression = {

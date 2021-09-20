@@ -10,13 +10,32 @@ export default function parse(input: string): ast {
         AstItem(item) {
             return item.toAST();
         },
-        TypeDeclaration(_, name, _2, parameters, _3, _4, definition) {
+        TypeDeclaration(exportKeyword, _, name, _2, parameters, _3, _4, definition) {
             return {
                 __typename: "TypeDeclaration",
                 name: name.toAST(),
                 parameters: parameters.toAST(),
-                definition: definition.toAST()
+                definition: definition.toAST(),
+                export: exportKeyword.sourceString !== ""
             };
+        },
+        ImportDeclaration(_, names, _2, file) {
+            const parsedNames = names.toAST();
+            return {
+                __typename: "ImportDeclaration",
+                path: file.sourceString,
+                moduleName: parsedNames[0],
+                items: parsedNames[1]
+            }
+        },
+        ImportDeclarationNames_module(name) {
+            return [name.sourceString, []];
+        },
+        ImportDeclarationNames_specificLeft(name, _, _2, list, _3) {
+            return [name.children[0].sourceString, list.toAST()];
+        },
+        ImportDeclarationNames_specificRight(_, list, _2, _3, name) {
+            return [name.children[0]?.sourceString, list.toAST()];
         },
         TypeParameterDeclaration_defaultValue(name, _, defaultValue) {
             return {
@@ -31,10 +50,11 @@ export default function parse(input: string): ast {
         ParensExpression(_, expression, _2) {
             return expression.toAST();
         },
-        CallExpression(callee, _, parameters, _2) {
+        CallExpression(module, _, callee, _2, parameters, _3) {
             return {
                 __typename: "CallExpression",
                 callee: callee.toAST(),
+                module: module.sourceString.length > 0 ? module.sourceString.slice(0, -1) : undefined,
                 parameters: parameters.toAST()
             };
         },

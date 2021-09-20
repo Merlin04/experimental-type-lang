@@ -3,13 +3,17 @@ Type {
     comment = "// " (~"\n" any)* -- singleLineComment
         | "/*" (~"*/" any)* "*/" -- multiLineComment
     space += comment
-    AstItem = TypeDeclaration | Expression | ""
-    TypeDeclaration = "type " identifier "<" ListOf<TypeParameterDeclaration, ","> ">" "=" Expression
+    AstItem = TypeDeclaration | ImportDeclaration | Expression | ""
+    TypeDeclaration = ("export" ?) "type " identifier "<" ListOf<TypeParameterDeclaration, ","> ">" "=" Expression
+    ImportDeclaration = "import" ImportDeclarationNames "from" (~"\n" ~";" any)*
+    ImportDeclarationNames = identifier -- module
+        | identifier "," "{" ListOf<identifier, ","> "}" -- specificLeft
+        | "{" ListOf<identifier, ","> "}" ("," identifier)? -- specificRight
     TypeParameterDeclaration = (identifier "=" Expression) -- defaultValue
         | identifier
     Expression = ParensExpression | stringExpression | ConditionExpression | CallExpression | number | ItemLiteralExpression | ArrayLiteralExpression | AbortExpression | ParameterReferenceExpression
     ParensExpression = "(" Expression ")"
-    CallExpression = identifier "<" ListOf<Expression, ","> ">"
+    CallExpression = (identifier ".")? identifier "<" ListOf<Expression, ","> ">"
     ItemLiteralExpression = "_"
     ArrayLiteralExpression = "[" ListOf<(SpreadExpression | Expression), ","> "]"
     SpreadExpression = "..." Expression
