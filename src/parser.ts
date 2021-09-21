@@ -1,4 +1,4 @@
-import grammar from "./g.ohm-recipe";
+import grammar from "./grammar/g.ohm-recipe";
 import { ast } from "./types";
 
 export default function parse(input: string): ast {

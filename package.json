@@ -16,7 +16,7 @@
     "ts-replace-all": "^1.0.0"
   },
   "scripts": {
-    "generate": "ohm generateRecipes --withTypes './g.ohm'",
+    "generate": "ohm generateRecipes --withTypes './src/grammar/g.ohm'",
     "eval": "ts-node index.ts"
   }
 }
