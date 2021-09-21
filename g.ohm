@@ -1,6 +1,6 @@
 Type {
     Program = ListOf<AstItem, ";">
-    comment = "// " (~"\n" any)* -- singleLineComment
+    comment = "//" (~"\n" any)* -- singleLineComment
         | "/*" (~"*/" any)* "*/" -- multiLineComment
     space += comment
     AstItem = TypeDeclaration | ImportDeclaration | Expression | ""

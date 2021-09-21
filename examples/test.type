@@ -7,4 +7,4 @@ Std.Subtract<Test<>, Add<2, 5>>;
 Subtract<5, 4>;
 Test<>;
 
-Std.FizzBuzzUpTo<100>;
+Std.FizzBuzzUpTo<200>;

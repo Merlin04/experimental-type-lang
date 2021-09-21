@@ -31,14 +31,11 @@ export type Sqrt<N, Left = 1, Right = N> = IsLessThanOrEq<Left, Right> extends F
 
 export type STRING_MAGIC_NUMBER<> = At<"", 0>;
 export type MakeString<A> = [STRING_MAGIC_NUMBER<>, A];
-type _NumberToStringInner<N> = Divide<N, 10> extends [infer R, infer Remainder]
-    ? Remainder extends 0
-        ? []
-        : [
-            ..._NumberToStringInner<R>,
-            Add<At<ToCharArray<"0">, 0>, Remainder>
-        ]
-    : abort;
+type _NumberToStringInner<N> = N extends 0 ? [] : Divide<N, 10> extends [infer R, infer Remainder]
+    ? [
+        ..._NumberToStringInner<R>,
+        Add<At<ToCharArray<"0">, 0>, Remainder>
+    ] : abort;
 export type NumberToString<N> = MakeString<_NumberToStringInner<N>>;
 export type ToCharArray<S> = At<S, 1>;
 type _FizzBuzzUpToInner<Limit, N = 1> = N extends Limit
