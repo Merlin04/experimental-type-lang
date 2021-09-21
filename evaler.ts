@@ -3,6 +3,8 @@ import { ast, Expression, InternalItem, TypeDeclaration, _InferExpression, _Skip
 import parse from "./parser";
 import "ts-replace-all";
 import fs from "fs/promises";
+// Slightly different name to not conflict with some local variables
+import pathM from "path";
 
 const STRING_MAGIC_NUMBER = 51224;
 
@@ -22,23 +24,24 @@ async function getContext(path: string, ast: ast): Promise<Context> {
             context.types.push(item);
         }
         else if(item.__typename === "ImportDeclaration") {
-            const moduleAst = parse((await fs.readFile(item.path)).toString());
+            const fullPath = pathM.join(pathM.dirname(path), item.path);
+            const moduleAst = parse((await fs.readFile(fullPath)).toString());
             for(const importedItem of item.items) {
                 const typeDec = moduleAst.find(i => i.__typename === "TypeDeclaration" && i.name === importedItem) as TypeDeclaration | undefined;
                 if(!typeDec) {
-                    throw new Error(`Could not find type ${importedItem} in module ${item.path}`);
+                    throw new Error(`Could not find type ${importedItem} in module ${fullPath}`);
                 }
                 else if(!typeDec.export) {
-                    throw new Error(`Importing ${importedItem} from module ${item.path} failed as it is not exported`);
+                    throw new Error(`Importing ${importedItem} from module ${fullPath} failed as it is not exported`);
                 }
                 context.types.push({
-                    module: item.path,
+                    module: fullPath,
                     name: importedItem
                 });
             }
-            context.modules[item.path] = {
+            context.modules[fullPath] = {
                 alias: item.moduleName,
-                context: await getContext(item.path, moduleAst)
+                context: await getContext(fullPath, moduleAst)
             };
         }
     }
